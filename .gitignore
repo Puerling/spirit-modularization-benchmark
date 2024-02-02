@@ -1,0 +1,6 @@
+# LSP specific
+/.cache
+compile_commands.json
+
+# compiled output
+/*.out
