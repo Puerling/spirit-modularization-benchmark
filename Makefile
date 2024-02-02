@@ -1,4 +1,3 @@
-CC=gcc
 CXX=g++
 CXXFLAGS=-std=c++17 -O3 -Wall -lstdc++ -lm
 
@@ -23,7 +22,7 @@ show :
 	-echo "$(ALL)"
 
 run : $(ALL)
-	-for f in $(ALL); do "./$$f"; done
+	-for f in $(ALL); do (set -x; "./$$f"); done
 
 clean :
 	-rm -f $(OUT_FILES) gmon.out
