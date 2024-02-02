@@ -287,13 +287,10 @@ template <typename Agg> int run_benchmark(const int argc, const char *argv[]) {
   generate_spins(begin(spins), end(spins), rng);
   std::fill(begin(energy), end(energy), 0.0);
 
-  ankerl::nanobench::Bench().minEpochIterations(10).run("Energy",
-                                 [&]() { agg.Energy(spins, energy); });
+  ankerl::nanobench::Bench().minEpochIterations(10).run(
+      "Energy", [&]() { agg.Energy(spins, energy); });
 
-  // fprintf(stdout, "Iteration (%02d) Total Energy: %g\n", i,
-  //         std::reduce(begin(energy), end(energy)));
-
-  ankerl::nanobench::Bench().minEpochIterations(100).run("Update", [&]() {
+  ankerl::nanobench::Bench().minEpochIterations(10).run("Update", [&]() {
     updateParameters<Agg>(agg,
                           make_update_parameter_set<Agg>(n_interactions, rng));
   });

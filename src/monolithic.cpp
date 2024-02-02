@@ -12,6 +12,7 @@ void Aggregator<SiteInteraction, PairInteraction, TripletInteraction,
     return;
 
   // sites
+  #pragma omp parallel for
   for (std::size_t icell = 0; icell < geometry->n_cells_total; ++icell) {
     for (std::size_t iatom = 0; iatom < site_indices.size(); ++iatom) {
       const int ispin = iatom + icell * geometry->atoms_per_cell;
@@ -21,6 +22,7 @@ void Aggregator<SiteInteraction, PairInteraction, TripletInteraction,
   }
 
   // pairs
+  #pragma omp parallel for
   for (std::size_t icell = 0; icell < geometry->n_cells_total; ++icell) {
     for (std::size_t ipair = 0; ipair < pair_pairs.size(); ++ipair) {
       const auto &pair = pair_pairs[ipair];
@@ -39,6 +41,7 @@ void Aggregator<SiteInteraction, PairInteraction, TripletInteraction,
   }
 
   // triplets
+  #pragma omp parallel for
   for (std::size_t icell = 0; icell < geometry->n_cells_total; ++icell) {
     for (std::size_t itriplet = 0; itriplet < triplet_triplets.size();
          ++itriplet) {
@@ -64,6 +67,7 @@ void Aggregator<SiteInteraction, PairInteraction, TripletInteraction,
   for (std::size_t iquad = 0; iquad < quadruplet_quadruplets.size(); ++iquad) {
     const auto &[i, j, k, l, d_j, d_k, d_l] = quadruplet_quadruplets[iquad];
 
+    #pragma omp parallel for
     for (std::size_t icell = 0; icell < geometry->n_cells_total; ++icell) {
       int ispin = i + icell * geometry->atoms_per_cell;
       int jspin = idx_from_pair(ispin, geometry->n_cells,

@@ -2,6 +2,7 @@
 
 #include "write_locality.hpp"
 #include "benchmark.hpp"
+#include <execution>
 
 namespace WriteLocality {
 
@@ -20,7 +21,7 @@ void SiteInteraction::applyParameters(const Geometry &geometry,
 template <typename DataVector>
 void SiteInteraction::applyGeometry(const Geometry &geometry,
                                     DataVector &data) {
-  std::for_each(begin(data), end(data),
+  std::for_each(std::execution::par_unseq, begin(data), end(data),
                 [](auto &element) { std::get<data_t>(element).reset(); });
 
   applyParameters(geometry, data);
@@ -77,7 +78,7 @@ void PairInteraction::applyParameters(const Geometry &geometry,
 template <typename DataVector>
 void PairInteraction::applyGeometry(const Geometry &geometry,
                                     DataVector &data) {
-  std::for_each(begin(data), end(data),
+  std::for_each(std::execution::par_unseq, begin(data), end(data),
                 [](auto &element) { std::get<data_t>(element).clear(); });
   applyParameters(geometry, data);
 };
@@ -134,7 +135,7 @@ void TripletInteraction::applyParameters(const Geometry &geometry,
 template <typename DataVector>
 void TripletInteraction::applyGeometry(const Geometry &geometry,
                                        DataVector &data) {
-  std::for_each(begin(data), end(data),
+  std::for_each(std::execution::par_unseq, begin(data), end(data),
                 [](auto &element) { std::get<data_t>(element).clear(); });
   applyParameters(geometry, data);
 }
@@ -197,7 +198,7 @@ void QuadrupletInteraction::applyParameters(const Geometry &geometry,
 template <typename DataVector>
 void QuadrupletInteraction::applyGeometry(const Geometry &geometry,
                                           DataVector &data) {
-  std::for_each(begin(data), end(data),
+  std::for_each(std::execution::par_unseq, begin(data), end(data),
                 [](auto &element) { std::get<data_t>(element).clear(); });
   applyParameters(geometry, data);
 }

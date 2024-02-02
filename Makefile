@@ -1,6 +1,6 @@
 CC=gcc
 CXX=g++
-CXXFLAGS=-std=c++17 -O3 -Wall
+CXXFLAGS=-std=c++17 -O3 -Wall -lstdc++ -lm
 
 SRC_DIR=./src
 INCLUDE_DIR=./include
@@ -31,5 +31,8 @@ clean :
 time : $(ALL)
 	-for f in $(ALL); do echo "==========" && env TIMEFMT=$$'job\t%J\nreal\t%E\nuser\t%U\nsys\t%S\nmem(peak)\t%M' zsh -c "time ./$$f > /dev/null"; done && echo "=========="
 
+write_locality.out : $(SRC_DIR)/write_locality.cpp $(INCLUDE_DIR)/write_locality.hpp $(HPP_FILES)
+	$(CXX) $(CXXFLAGS) -ltbb $(INCLUDES) -o $@ $<
+
 %.out : $(SRC_DIR)/%.cpp $(INCLUDE_DIR)/%.hpp $(HPP_FILES)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $<
+	$(CXX) $(CXXFLAGS) -fopenmp-simd $(INCLUDES) -o $@ $<

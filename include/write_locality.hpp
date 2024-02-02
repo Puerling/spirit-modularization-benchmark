@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <memory>
 #include <optional>
+#include <execution>
 
 namespace WriteLocality {
 
@@ -186,7 +187,7 @@ public:
           interactions);
     };
 
-    std::transform(begin(data_), end(data_), begin(energy), transform);
+    std::transform(std::execution::par_unseq, begin(data_), end(data_), begin(energy), transform);
   }
 
   void setGeometry(const std::shared_ptr<Geometry> g) {

@@ -14,6 +14,7 @@ void SiteInteraction::Energy(const vectorfield &spins, scalarfield &energy) {
   if (!geometry)
     return;
 
+  #pragma omp parallel for
   for (std::size_t icell = 0; icell < geometry->n_cells_total; ++icell) {
     for (std::size_t iatom = 0; iatom < indices_.size(); ++iatom) {
       const int ispin = iatom + icell * geometry->atoms_per_cell;
@@ -41,6 +42,7 @@ void PairInteraction::Energy(const vectorfield &spins, scalarfield &energy) {
   if (!geometry)
     return;
 
+  #pragma omp parallel for
   for (std::size_t icell = 0; icell < geometry->n_cells_total; ++icell) {
     for (std::size_t ipair = 0; ipair < pairs_.size(); ++ipair) {
       const auto &pair = pairs_[ipair];
@@ -75,6 +77,7 @@ void TripletInteraction::Energy(const vectorfield &spins, scalarfield &energy) {
   if (!geometry)
     return;
 
+  #pragma omp parallel for
   for (std::size_t icell = 0; icell < geometry->n_cells_total; ++icell) {
     for (std::size_t itriplet = 0; itriplet < triplets_.size(); ++itriplet) {
       const auto &[i, j, k, d_j, d_k] = triplets_[itriplet];
@@ -116,6 +119,7 @@ void QuadrupletInteraction::Energy(const vectorfield &spins,
   for (std::size_t iquad = 0; iquad < quadruplets_.size(); ++iquad) {
     const auto &[i, j, k, l, d_j, d_k, d_l] = quadruplets_[iquad];
 
+    #pragma omp parallel for
     for (std::size_t icell = 0; icell < geometry->n_cells_total; ++icell) {
       int ispin = i + icell * geometry->atoms_per_cell;
       int jspin = idx_from_pair(ispin, geometry->n_cells,
