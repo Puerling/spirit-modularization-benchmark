@@ -4,6 +4,9 @@
 #include <memory>
 #include <vector>
 
+#include <Eigen/Core>
+#include <Eigen/Dense>
+
 using tri_int = std::array<std::size_t, 3>;
 
 struct Geometry {
@@ -47,7 +50,7 @@ struct Quadruplet {
   std::array<int, 3> d_j, d_k, d_l;
 };
 
-using Vector3 = std::array<scalar, 3>;
+using Vector3 = Eigen::Matrix<scalar, 3, 1>;
 
 using pairfield = field<Pair>;
 using tripletfield = field<Triplet>;
@@ -90,20 +93,15 @@ struct QuadrupletInputData : public QuadrupletUpdateData {
 };
 
 inline scalar dot(const Vector3 &a, const Vector3 &b) {
-  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  return a.dot(b);
 }
 
 inline Vector3 normalized(const Vector3 &a) {
-  const scalar norm = std::sqrt(dot(a, a));
-  if (norm > 1e-6)
-    return Vector3{a[0] / norm, a[1] / norm, a[2] / norm};
-  else
-    return a;
+  return a.normalized();
 }
 
 inline Vector3 cross(const Vector3 &a, const Vector3 &b) {
-  return Vector3{a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
-                 a[0] * b[1] - a[1] * b[0]};
+  return a.cross(b);
 }
 
 inline int idx_from_translations(const tri_int &n_cells, const int n_cell_atoms,

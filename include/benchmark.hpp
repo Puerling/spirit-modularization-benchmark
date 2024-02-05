@@ -18,7 +18,7 @@ std::shared_ptr<Geometry> make_geometry(tri_int n_cells = {5, 5, 5},
 template <typename RandomFunc>
 Vector3 make_random_normal_vector(RandomFunc &rng) {
   static std::uniform_real_distribution<> dist(-1.0, 1.0);
-  return normalized(std::array{dist(rng), dist(rng), dist(rng)});
+  return normalized(Vector3{dist(rng), dist(rng), dist(rng)});
 };
 
 template <typename RandomFunc>
