@@ -2,9 +2,9 @@
 #include "natives.hpp"
 #include <algorithm>
 #include <cstdlib>
+#include <execution>
 #include <memory>
 #include <optional>
-#include <execution>
 
 namespace WriteLocality {
 
@@ -23,7 +23,7 @@ public:
                   vectorfield direction)
       : indices_{std::move(indices)}, magnitude_{std::move(magnitude)},
         direction_{std::move(direction)} {};
-  SiteInteraction(const input_data & data)
+  SiteInteraction(const input_data &data)
       : SiteInteraction(data.indices_, data.magnitude_, data.direction_){};
 
   using data_t = std::optional<Data>;
@@ -33,16 +33,11 @@ public:
   template <typename DataVector>
   void applyParameters(const Geometry &geometry, DataVector &data);
 
-  template <typename DataVector>
-  void applyGeometry(const Geometry &geometry, DataVector &data);
+  template <typename DataTuple> void clearData(DataTuple &data) const;
 
-  template <typename DataVector>
-  void setParameters(const input_data &parameters, const Geometry &geometry,
-                     DataVector &data);
+  void setParameters(const input_data &parameters);
 
-  template <typename DataVector>
-  void updateParameters(const update_data &parameters, const Geometry &geometry,
-                        DataVector &data);
+  void updateParameters(const update_data &parameters);
 
 private:
   intfield indices_;
@@ -71,16 +66,11 @@ public:
   template <typename DataVector>
   void applyParameters(const Geometry &geometry, DataVector &data);
 
-  template <typename DataVector>
-  void applyGeometry(const Geometry &geometry, DataVector &data);
+  template <typename DataTuple> void clearData(DataTuple &data) const;
 
-  template <typename DataVector>
-  void setParameters(const input_data &parameters, const Geometry &geometry,
-                     DataVector &data);
+  void setParameters(const input_data &parameters);
 
-  template <typename DataVector>
-  void updateParameters(const update_data &parameters, const Geometry &geometry,
-                        DataVector &data);
+  void updateParameters(const update_data &parameters);
 
 private:
   pairfield pairs_;
@@ -107,16 +97,11 @@ public:
   template <typename DataVector>
   void applyParameters(const Geometry &geometry, DataVector &data);
 
-  template <typename DataVector>
-  void applyGeometry(const Geometry &geometry, DataVector &data);
+  template <typename DataTuple> void clearData(DataTuple &element) const;
 
-  template <typename DataVector>
-  void setParameters(const input_data &parameters, const Geometry &geometry,
-                     DataVector &data);
+  void setParameters(const input_data &parameters);
 
-  template <typename DataVector>
-  void updateParameters(const update_data &parameters, const Geometry &geometry,
-                        DataVector &data);
+  void updateParameters(const update_data &parameters);
 
 private:
   tripletfield triplets_;
@@ -145,16 +130,11 @@ public:
   template <typename DataVector>
   void applyParameters(const Geometry &geometry, DataVector &data);
 
-  template <typename DataVector>
-  void applyGeometry(const Geometry &geometry, DataVector &data);
+  template <typename DataTuple> void clearData(DataTuple &data) const;
 
-  template <typename DataVector>
-  void setParameters(const input_data &parameters, const Geometry &geometry,
-                     DataVector &data);
+  void setParameters(const input_data &parameters);
 
-  template <typename DataVector>
-  void updateParameters(const update_data &parameters, const Geometry &geometry,
-                        DataVector &data);
+  void updateParameters(const update_data &parameters);
 
 private:
   quadrupletfield quadruplets_;
@@ -187,7 +167,8 @@ public:
           interactions);
     };
 
-    std::transform(std::execution::par_unseq, begin(data_), end(data_), begin(energy), transform);
+    std::transform(std::execution::par_unseq, begin(data_), end(data_),
+                   begin(energy), transform);
   }
 
   void setGeometry(const std::shared_ptr<Geometry> g) {
@@ -201,30 +182,50 @@ public:
     if (data_.size() != g->nos) {
       data_ = field<data_tuple_t>(
           g->nos, std::make_tuple(typename Interactions::data_t{}...));
-      std::apply(
-          [this](auto &...e) { (e.applyParameters(*geometry, data_), ...); },
-          interactions_);
     } else {
-      std::apply(
-          [this](auto &...e) { (e.applyGeometry(*geometry, data_), ...); },
-          interactions_);
+      std::for_each(
+          std::execution::par_unseq, begin(data_), end(data_),
+          [&int_ = interactions_](auto &e) {
+            std::apply([&e](const auto &...i) { (i.clearData(e), ...); }, int_);
+          });
     }
+    std::apply(
+        [this](auto &...e) { (e.applyParameters(*geometry, data_), ...); },
+        interactions_);
   }
 
   template <typename Interaction>
   void setParameters(const typename Interaction::input_data &parameters) {
     if (!geometry)
       return;
-    std::get<Interaction>(interactions_)
-        .setParameters(parameters, *geometry, data_);
+
+    const auto &interaction = [this, &parameters]() {
+      auto &interaction = std::get<Interaction>(interactions_);
+      interaction.setParameters(parameters);
+      return interaction;
+    }();
+
+    std::for_each(std::execution::par_unseq, begin(data_), end(data_),
+                  [&interaction](auto &e) { interaction.clearData(e); });
+
+    std::get<Interaction>(interactions_).applyParameters(*geometry, data_);
   }
 
   template <typename Interaction>
   void updateParameters(const typename Interaction::update_data &parameters) {
     if (!geometry)
       return;
-    std::get<Interaction>(interactions_)
-        .updateParameters(parameters, *geometry, data_);
+
+    const auto &interaction = [this, &parameters]() {
+      auto &interaction = std::get<Interaction>(interactions_);
+      interaction.updateParameters(parameters);
+      return interaction;
+    }();
+
+    std::for_each(std::execution::par_unseq, begin(data_), end(data_),
+                  [&interaction](auto &e) { interaction.clearData(e); });
+
+    std::get<Interaction>(interactions_).applyParameters(*geometry, data_);
   }
 
 private:

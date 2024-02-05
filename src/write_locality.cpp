@@ -18,13 +18,9 @@ void SiteInteraction::applyParameters(const Geometry &geometry,
     }
 }
 
-template <typename DataVector>
-void SiteInteraction::applyGeometry(const Geometry &geometry,
-                                    DataVector &data) {
-  std::for_each(std::execution::par_unseq, begin(data), end(data),
-                [](auto &element) { std::get<data_t>(element).reset(); });
-
-  applyParameters(geometry, data);
+template <typename DataTuple>
+void SiteInteraction::clearData(DataTuple &element) const {
+  std::get<data_t>(element).reset();
 };
 
 scalar SiteInteraction::Energy(const data_t &data_, const vectorfield &spins) {
@@ -35,23 +31,15 @@ scalar SiteInteraction::Energy(const data_t &data_, const vectorfield &spins) {
   return data_->magnitude * d * d;
 };
 
-template <typename DataVector>
-void SiteInteraction::setParameters(const input_data &parameters,
-                                    const Geometry &geometry,
-                                    DataVector &data) {
+void SiteInteraction::setParameters(const input_data &parameters) {
   indices_ = parameters.indices_;
   magnitude_ = parameters.magnitude_;
   direction_ = parameters.direction_;
-  applyGeometry(geometry, data);
 };
 
-template <typename DataVector>
-void SiteInteraction::updateParameters(const update_data &parameters,
-                                       const Geometry &geometry,
-                                       DataVector &data) {
+void SiteInteraction::updateParameters(const update_data &parameters) {
   magnitude_ = parameters.magnitude_;
   direction_ = parameters.direction_;
-  applyGeometry(geometry, data);
 };
 
 template <typename DataVector>
@@ -75,12 +63,9 @@ void PairInteraction::applyParameters(const Geometry &geometry,
     }
 };
 
-template <typename DataVector>
-void PairInteraction::applyGeometry(const Geometry &geometry,
-                                    DataVector &data) {
-  std::for_each(std::execution::par_unseq, begin(data), end(data),
-                [](auto &element) { std::get<data_t>(element).clear(); });
-  applyParameters(geometry, data);
+template <typename DataTuple>
+void PairInteraction::clearData(DataTuple &element) const {
+  std::get<data_t>(element).clear();
 };
 
 scalar PairInteraction::Energy(const data_t &data_, const vectorfield &spins) {
@@ -92,21 +77,13 @@ scalar PairInteraction::Energy(const data_t &data_, const vectorfield &spins) {
   return 0.5 * E;
 };
 
-template <typename DataVector>
-void PairInteraction::setParameters(const input_data &parameters,
-                                    const Geometry &geometry,
-                                    DataVector &data) {
+void PairInteraction::setParameters(const input_data &parameters) {
   pairs_ = parameters.pairs_;
   magnitude_ = parameters.magnitude_;
-  applyGeometry(geometry, data);
 };
 
-template <typename DataVector>
-void PairInteraction::updateParameters(const update_data &parameters,
-                                       const Geometry &geometry,
-                                       DataVector &data) {
+void PairInteraction::updateParameters(const update_data &parameters) {
   magnitude_ = parameters.magnitude_;
-  applyGeometry(geometry, data);
 };
 
 template <typename DataVector>
@@ -132,12 +109,9 @@ void TripletInteraction::applyParameters(const Geometry &geometry,
     }
 }
 
-template <typename DataVector>
-void TripletInteraction::applyGeometry(const Geometry &geometry,
-                                       DataVector &data) {
-  std::for_each(std::execution::par_unseq, begin(data), end(data),
-                [](auto &element) { std::get<data_t>(element).clear(); });
-  applyParameters(geometry, data);
+template <typename DataTuple>
+void TripletInteraction::clearData(DataTuple &element) const {
+  std::get<data_t>(element).clear();
 }
 
 scalar TripletInteraction::Energy(const data_t &data_,
@@ -150,22 +124,14 @@ scalar TripletInteraction::Energy(const data_t &data_,
   return (1.0 / 3.0) * E;
 };
 
-template <typename DataVector>
-void TripletInteraction::setParameters(const input_data &parameters,
-                                       const Geometry &geometry,
-                                       DataVector &data) {
+void TripletInteraction::setParameters(const input_data &parameters) {
   triplets_ = parameters.triplets_;
   magnitude_ = parameters.magnitude_;
-  applyGeometry(geometry, data);
 };
 
-template <typename DataVector>
-void TripletInteraction::updateParameters(const update_data &parameters,
-                                          const Geometry &geometry,
-                                          DataVector &data) {
+void TripletInteraction::updateParameters(const update_data &parameters) {
 
   magnitude_ = parameters.magnitude_;
-  applyGeometry(geometry, data);
 };
 
 template <typename DataVector>
@@ -195,12 +161,9 @@ void QuadrupletInteraction::applyParameters(const Geometry &geometry,
     }
   }
 }
-template <typename DataVector>
-void QuadrupletInteraction::applyGeometry(const Geometry &geometry,
-                                          DataVector &data) {
-  std::for_each(std::execution::par_unseq, begin(data), end(data),
-                [](auto &element) { std::get<data_t>(element).clear(); });
-  applyParameters(geometry, data);
+template <typename DataTuple>
+void QuadrupletInteraction::clearData(DataTuple &element) const {
+  std::get<data_t>(element).clear();
 }
 
 scalar QuadrupletInteraction::Energy(const data_t &data_,
@@ -213,21 +176,13 @@ scalar QuadrupletInteraction::Energy(const data_t &data_,
   return 0.25 * E;
 };
 
-template <typename DataVector>
-void QuadrupletInteraction::setParameters(const input_data &parameters,
-                                          const Geometry &geometry,
-                                          DataVector &data) {
+void QuadrupletInteraction::setParameters(const input_data &parameters ) {
   quadruplets_ = parameters.quadruplets_;
   magnitude_ = parameters.magnitude_;
-  applyGeometry(geometry, data);
 };
 
-template <typename DataVector>
-void QuadrupletInteraction::updateParameters(const update_data &parameters,
-                                             const Geometry &geometry,
-                                             DataVector &data) {
+void QuadrupletInteraction::updateParameters(const update_data &parameters) {
   magnitude_ = parameters.magnitude_;
-  applyGeometry(geometry, data);
 }
 
 } // namespace WriteLocality
