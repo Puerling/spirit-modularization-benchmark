@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <memory>
-#include <nanobench.h>
+#include <nanobench/nanobench.h>
 #include <numeric>
 #include <random>
 #include <utility>

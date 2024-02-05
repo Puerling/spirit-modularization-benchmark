@@ -4,7 +4,7 @@ CXXFLAGS=-std=c++17 -O3 -Wall -lstdc++ -lm
 SRC_DIR=./src
 INCLUDE_DIR=./include
 
-INCLUDES=-I./nanobench -I./include
+INCLUDES=-I./thirdparty -I./include
 
 HPP_FILES=$(patsubst %,$(INCLUDE_DIR)/%,natives.hpp benchmark.hpp)
 SRC_FILES=$(wildcard $(SRC_DIR)/*.cpp)
