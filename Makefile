@@ -33,5 +33,8 @@ time : $(ALL)
 write_locality.out : $(SRC_DIR)/write_locality.cpp $(INCLUDE_DIR)/write_locality.hpp $(HPP_FILES)
 	$(CXX) $(CXXFLAGS) -ltbb $(INCLUDES) -o $@ $<
 
+compact_write_locality.out : $(SRC_DIR)/compact_write_locality.cpp $(INCLUDE_DIR)/compact_write_locality.hpp $(HPP_FILES)
+	$(CXX) $(CXXFLAGS) -ltbb $(INCLUDES) -o $@ $<
+
 %.out : $(SRC_DIR)/%.cpp $(INCLUDE_DIR)/%.hpp $(HPP_FILES)
 	$(CXX) $(CXXFLAGS) -fopenmp-simd $(INCLUDES) -o $@ $<
