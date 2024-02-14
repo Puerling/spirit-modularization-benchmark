@@ -3,6 +3,7 @@ CXXFLAGS=-std=c++17 -O3 -Wall -lstdc++ -lm
 
 SRC_DIR=./src
 INCLUDE_DIR=./include
+DATA_DIR=data
 
 INCLUDES=-I./thirdparty -I./thirdparty/Eigen -I./include
 
@@ -38,3 +39,6 @@ compact_write_locality.out : $(SRC_DIR)/compact_write_locality.cpp $(INCLUDE_DIR
 
 %.out : $(SRC_DIR)/%.cpp $(INCLUDE_DIR)/%.hpp $(HPP_FILES)
 	$(CXX) $(CXXFLAGS) -fopenmp-simd $(INCLUDES) -o $@ $<
+
+$(DATA_DIR)/%.log : %.out
+	-./$< | grep "^|" > $@

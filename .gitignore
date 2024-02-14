@@ -4,3 +4,10 @@ compile_commands.json
 
 # compiled output
 /*.out
+
+# benchmark data
+/data/*
+!/data/.gitkeep
+
+/plots/*
+!/plots/.gitkeep

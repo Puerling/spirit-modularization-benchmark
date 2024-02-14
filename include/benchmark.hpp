@@ -271,29 +271,46 @@ void generate_spins(vectorfield::iterator begin, vectorfield::iterator end,
 };
 
 template <typename Agg> int run_benchmark(const int argc, const char *argv[]) {
+  using std::literals::string_literals::operator""s;
+
   std::array<std::size_t, 4> n_interactions{3, 5, 5, 5};
   std::mt19937 rng(1293175);
 
-  auto geometry = make_geometry({25, 25, 25}, 10);
-  if (!geometry) {
-    fprintf(stderr, "No Geometry created\n");
-    return EXIT_FAILURE;
-  }
+  const std::array supercell_size{1, 10, 25, 50, 75, 100};
+  const std::array cell_size{1, 2, 3, 4, 5, 10, 20};
 
-  auto agg = make_aggregator<Agg>(geometry, n_interactions, rng);
-  vectorfield spins = make_spins(geometry->nos, rng);
-  scalarfield energy(geometry->nos, 0.0);
+  const std::size_t max_size = 1'000'000;
 
-  generate_spins(begin(spins), end(spins), rng);
-  std::fill(begin(energy), end(energy), 0.0);
+  for (std::size_t n1 : supercell_size)
+    for (std::size_t n2 : supercell_size)
+      for (std::size_t n3 : supercell_size)
+        for (std::size_t n0 : cell_size) {
 
-  ankerl::nanobench::Bench().minEpochIterations(10).run(
-      "Energy", [&]() { agg.Energy(spins, energy); });
+          if (n0 * n1 * n2 * n3 > max_size)
+            continue;
 
-  ankerl::nanobench::Bench().minEpochIterations(10).run("Update", [&]() {
-    updateParameters<Agg>(agg,
-                          make_update_parameter_set<Agg>(n_interactions, rng));
-  });
+          auto geometry = make_geometry({n1, n2, n3}, n0);
+          if (!geometry) {
+            fprintf(stderr, "No Geometry created\n");
+            return EXIT_FAILURE;
+          }
+
+          auto agg = make_aggregator<Agg>(geometry, n_interactions, rng);
+          vectorfield spins = make_spins(geometry->nos, rng);
+          scalarfield energy(geometry->nos, 0.0);
+
+          std::stringstream s;
+          s << "Geometry( " << n1 << "x"<< n2 << "x" << n3 << ", cell: " << n0 << " )";
+
+          ankerl::nanobench::Bench().minEpochIterations(10).run(
+              "Energy: "s + s.str(), [&]() { agg.Energy(spins, energy); });
+
+          ankerl::nanobench::Bench().minEpochIterations(10).run(
+              "Update: "s + s.str(), [&]() {
+                updateParameters<Agg>(
+                    agg, make_update_parameter_set<Agg>(n_interactions, rng));
+              });
+        }
 
   return EXIT_SUCCESS;
 };
