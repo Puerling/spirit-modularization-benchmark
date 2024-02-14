@@ -161,7 +161,7 @@ public:
           interactions);
     };
 
-    std::transform(std::execution::par_unseq, begin(data_), end(data_),
+    std::transform(std::execution::par, cbegin(data_), cend(data_),
                    begin(energy), transform);
   }
 
@@ -178,7 +178,7 @@ public:
           geometry->nos, std::make_tuple(typename Interactions::data_t{}...));
     } else {
       std::for_each(
-          std::execution::par_unseq, begin(data_), end(data_),
+          std::execution::par, begin(data_), end(data_),
           [&int_ = interactions_](auto &e) {
             std::apply([&e](const auto &...i) { (i.clearData(e), ...); }, int_);
           });
@@ -199,7 +199,7 @@ public:
       return interaction;
     }();
 
-    std::for_each(std::execution::par_unseq, begin(data_), end(data_),
+    std::for_each(std::execution::par, begin(data_), end(data_),
                   [&interaction](auto &e) { interaction.clearData(e); });
 
     std::get<Interaction>(interactions_).applyParameters(*geometry, data_);
@@ -216,7 +216,7 @@ public:
       return interaction;
     }();
 
-    std::for_each(std::execution::par_unseq, begin(data_), end(data_),
+    std::for_each(std::execution::par, begin(data_), end(data_),
                   [&interaction](auto &e) { interaction.clearData(e); });
 
     std::get<Interaction>(interactions_).applyParameters(*geometry, data_);
