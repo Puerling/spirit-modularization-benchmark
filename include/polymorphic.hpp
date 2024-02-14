@@ -142,7 +142,7 @@ public:
     }
   };
 
-  Aggregator() = default;
+  Aggregator() noexcept = default;
   Aggregator(const Aggregator &other) {
     for (auto &interaction : other.interactions_) {
       interactions_.emplace_back(interaction->clone(this));
