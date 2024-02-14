@@ -8,7 +8,7 @@ namespace WriteLocality {
 
 template <typename DataVector>
 void SiteInteraction::applyParameters(const Geometry &geometry,
-                                      DataVector &data) {
+                                      DataVector &data) const {
   for (std::size_t icell = 0; icell < geometry.n_cells_total; ++icell)
     for (std::size_t iatom = 0; iatom < indices_.size(); ++iatom) {
       const int ispin = iatom + icell * geometry.atoms_per_cell;
@@ -23,7 +23,7 @@ void SiteInteraction::clearData(DataTuple &element) const {
   std::get<data_t>(element).reset();
 };
 
-scalar SiteInteraction::Energy(const data_t &data_, const vectorfield &spins) {
+scalar SiteInteraction::Energy(const data_t &data_, const vectorfield &spins) const {
   if (!data_.has_value())
     return 0;
 
@@ -44,7 +44,7 @@ void SiteInteraction::updateParameters(const update_data &parameters) {
 
 template <typename DataVector>
 void PairInteraction::applyParameters(const Geometry &geometry,
-                                      DataVector &data) {
+                                      DataVector &data) const {
   for (std::size_t icell = 0; icell < geometry.n_cells_total; ++icell)
     for (std::size_t ipair = 0; ipair < pairs_.size(); ++ipair) {
       const auto &pair = pairs_[ipair];
@@ -68,7 +68,7 @@ void PairInteraction::clearData(DataTuple &element) const {
   std::get<data_t>(element).clear();
 };
 
-scalar PairInteraction::Energy(const data_t &data_, const vectorfield &spins) {
+scalar PairInteraction::Energy(const data_t &data_, const vectorfield &spins) const {
   scalar E = 0;
   for (const auto &[i, j, c] : data_) {
     E += c * dot(spins[i], spins[j]);
@@ -88,7 +88,7 @@ void PairInteraction::updateParameters(const update_data &parameters) {
 
 template <typename DataVector>
 void TripletInteraction::applyParameters(const Geometry &geometry,
-                                         DataVector &data) {
+                                         DataVector &data) const {
   for (std::size_t icell = 0; icell < geometry.n_cells_total; ++icell)
     for (std::size_t itriplet = 0; itriplet < triplets_.size(); ++itriplet) {
       const auto &[i, j, k, d_j, d_k] = triplets_[itriplet];
@@ -115,7 +115,7 @@ void TripletInteraction::clearData(DataTuple &element) const {
 }
 
 scalar TripletInteraction::Energy(const data_t &data_,
-                                  const vectorfield &spins) {
+                                  const vectorfield &spins) const {
   scalar E = 0;
   for (const auto &[i, j, k, c] : data_) {
     E += c * dot(spins[i], cross(spins[j], spins[k]));
@@ -136,7 +136,7 @@ void TripletInteraction::updateParameters(const update_data &parameters) {
 
 template <typename DataVector>
 void QuadrupletInteraction::applyParameters(const Geometry &geometry,
-                                            DataVector &data) {
+                                            DataVector &data) const {
   for (std::size_t iquad = 0; iquad < quadruplets_.size(); ++iquad) {
     const auto &[i, j, k, l, d_j, d_k, d_l] = quadruplets_[iquad];
     for (std::size_t icell = 0; icell < geometry.n_cells_total; ++icell) {
@@ -167,7 +167,7 @@ void QuadrupletInteraction::clearData(DataTuple &element) const {
 }
 
 scalar QuadrupletInteraction::Energy(const data_t &data_,
-                                     const vectorfield &spins) {
+                                     const vectorfield &spins) const {
   scalar E = 0;
   for (const auto &[i, j, k, l, c] : data_) {
     E += c * dot(spins[i], spins[j]) * dot(spins[k], spins[l]);

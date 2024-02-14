@@ -8,7 +8,7 @@
 
 namespace WriteLocality {
 
-class SiteInteraction : public Owned {
+class SiteInteraction {
 public:
   struct Data {
     Data() = delete;
@@ -28,10 +28,10 @@ public:
 
   using data_t = std::optional<Data>;
 
-  scalar Energy(const data_t &data_, const vectorfield &spins);
+  scalar Energy(const data_t &data_, const vectorfield &spins) const;
 
   template <typename DataVector>
-  void applyParameters(const Geometry &geometry, DataVector &data);
+  void applyParameters(const Geometry &geometry, DataVector &data) const;
 
   template <typename DataTuple> void clearData(DataTuple &data) const;
 
@@ -45,7 +45,7 @@ private:
   vectorfield direction_;
 };
 
-class PairInteraction : public Owned {
+class PairInteraction {
 public:
   struct Data {
     int i, j;
@@ -61,10 +61,10 @@ public:
 
   using data_t = field<Data>;
 
-  scalar Energy(const data_t &data_, const vectorfield &spins);
+  scalar Energy(const data_t &data_, const vectorfield &spins) const;
 
   template <typename DataVector>
-  void applyParameters(const Geometry &geometry, DataVector &data);
+  void applyParameters(const Geometry &geometry, DataVector &data) const;
 
   template <typename DataTuple> void clearData(DataTuple &data) const;
 
@@ -77,7 +77,7 @@ private:
   scalarfield magnitude_;
 };
 
-class TripletInteraction : public Owned {
+class TripletInteraction {
 public:
   struct Data {
     int i, j, k;
@@ -92,10 +92,10 @@ public:
       : TripletInteraction(data.triplets_, data.magnitude_){};
 
   using data_t = field<Data>;
-  scalar Energy(const data_t &data_, const vectorfield &spins);
+  scalar Energy(const data_t &data_, const vectorfield &spins) const;
 
   template <typename DataVector>
-  void applyParameters(const Geometry &geometry, DataVector &data);
+  void applyParameters(const Geometry &geometry, DataVector &data) const;
 
   template <typename DataTuple> void clearData(DataTuple &element) const;
 
@@ -125,10 +125,10 @@ public:
 
   using data_t = field<Data>;
 
-  scalar Energy(const data_t &data_, const vectorfield &spins);
+  scalar Energy(const data_t &data_, const vectorfield &spins) const;
 
   template <typename DataVector>
-  void applyParameters(const Geometry &geometry, DataVector &data);
+  void applyParameters(const Geometry &geometry, DataVector &data) const;
 
   template <typename DataTuple> void clearData(DataTuple &data) const;
 
@@ -141,24 +141,18 @@ private:
   scalarfield magnitude_;
 };
 
-template <typename... Interactions> class Aggregator : public Owner {
+template <typename... Interactions> class Aggregator {
 public:
   Aggregator(std::shared_ptr<Geometry> geometry, Interactions... interactions)
-      : Owner{}, interactions_(interactions...) {
-    std::apply([this](auto &...e) { (e.setOwner(this), ...); }, interactions_);
+      : interactions_(interactions...), geometry{} {
     setGeometry(geometry);
   };
 
   void Energy(const vectorfield &spins, scalarfield &energy) {
-    const auto *g = geometry.get();
-    if (!g) {
-      return;
-    }
-
     auto transform = [&spins,
-                      &interactions = interactions_](data_tuple_t &item) {
+                      &interactions = interactions_](const data_tuple_t &item) {
       return std::apply(
-          [&spins, &item](auto &...interaction) {
+          [&spins, &item](const auto &...interaction) {
             return (
                 interaction.Energy(
                     std::get<data_type<decltype(interaction)>>(item), spins) +
@@ -172,16 +166,16 @@ public:
   }
 
   void setGeometry(const std::shared_ptr<Geometry> g) {
-    geometry = g;
+    geometry = std::move(g);
 
-    if (!g) {
+    if (!geometry) {
       data_.clear();
       return;
     }
 
-    if (data_.size() != g->nos) {
+    if (data_.size() != geometry->nos) {
       data_ = field<data_tuple_t>(
-          g->nos, std::make_tuple(typename Interactions::data_t{}...));
+          geometry->nos, std::make_tuple(typename Interactions::data_t{}...));
     } else {
       std::for_each(
           std::execution::par_unseq, begin(data_), end(data_),
@@ -234,6 +228,7 @@ private:
 
   std::tuple<Interactions...> interactions_;
   field<data_tuple_t> data_;
+  std::shared_ptr<Geometry> geometry;
 
 public:
   template <std::size_t I>
