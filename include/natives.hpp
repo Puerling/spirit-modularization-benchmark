@@ -7,18 +7,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-using tri_int = std::array<std::size_t, 3>;
-
-struct Geometry {
-  Geometry(tri_int n_cells, std::size_t atoms_per_cell)
-      : n_cells_total{n_cells[0] * n_cells[1] * n_cells[2]},
-        atoms_per_cell{atoms_per_cell}, nos{n_cells_total * atoms_per_cell},
-        n_cells{n_cells} {};
-  std::size_t n_cells_total;
-  std::size_t atoms_per_cell;
-  std::size_t nos;
-  tri_int n_cells;
-};
+struct Geometry;
 
 struct Owner {
   std::shared_ptr<Geometry> geometry;
@@ -32,23 +21,78 @@ public:
   void setOwner(Owner *new_owner) { owner = new_owner; }
 };
 
+#ifdef SPIRIT_USE_CUDA
+
+#include "Managed_Allocator.hpp"
+using scalar = float;
+template <typename T> using field = std::vector<T, managed_allocator<T>>;
+
+struct Pair {
+  int i, j;
+  int translations[3];
+
+  template<typename... Array, typename = std::enable_if_t<sizeof...(Array) == 1>>
+  static Pair create(int i, int j, Array&&... t){
+    return Pair{i, j, {t[0], t[1], t[2]}...};
+  }
+};
+
+struct Triplet {
+  int i, j, k;
+  int d_j[3], d_k[3];
+
+  template<typename... Array, typename = std::enable_if_t<sizeof...(Array) == 2>>
+  static Triplet create(int i, int j, int k, Array&&... t){
+    return Triplet{i, j, k, {t[0], t[1], t[2]}...};
+  }
+};
+
+struct Quadruplet {
+  int i, j, k, l;
+  int d_j[3], d_k[3], d_l[3];
+
+  template<typename... Array, typename = std::enable_if_t<sizeof...(Array) == 3>>
+  static Quadruplet create(int i, int j, int k, int l, Array&&... t){
+    return Quadruplet{i, j, k, l, {t[0], t[1], t[2]}...};
+  }
+};
+
+#else
+
 using scalar = double;
 template <typename T> using field = std::vector<T>;
 
 struct Pair {
   int i, j;
   std::array<int, 3> translations;
+
+  template<typename... Array, typename = std::enable_if<sizeof...(Array) == 3>>
+  static Pair create(int i, int j, Array&&... t){
+    return Pair{i, j, {t[0], t[1], t[2]}...};
+  }
 };
 
 struct Triplet {
   int i, j, k;
   std::array<int, 3> d_j, d_k;
+
+  template<typename... Array, typename = std::enable_if<sizeof...(Array) == 3>>
+  static Triplet create(int i, int j, int k, Array&&... t){
+    return Triplet{i, j, k, {t[0], t[1], t[2]}...};
+  }
 };
 
 struct Quadruplet {
   int i, j, k, l;
   std::array<int, 3> d_j, d_k, d_l;
+
+  template<typename... Array, typename = std::enable_if<sizeof...(Array) == 3>>
+  static Quadruplet create(int i, int j, int k, int l, Array&&... t){
+    return Quadruplet{i, j, k, l, {t[0], t[1], t[2]}...};
+  }
 };
+
+#endif
 
 using Vector3 = Eigen::Matrix<scalar, 3, 1>;
 
@@ -58,67 +102,67 @@ using quadrupletfield = field<Quadruplet>;
 using intfield = field<int>;
 using scalarfield = field<scalar>;
 using vectorfield = field<Vector3>;
+using sizefield = field<std::size_t>;
+
+struct Geometry {
+  Geometry(sizefield n_cells, std::size_t atoms_per_cell)
+      : n_cells_total{n_cells[0] * n_cells[1] * n_cells[2]},
+        atoms_per_cell{atoms_per_cell}, nos{n_cells_total * atoms_per_cell},
+        n_cells{n_cells} {};
+  std::size_t n_cells_total;
+  std::size_t atoms_per_cell;
+  std::size_t nos;
+  sizefield n_cells;
+};
 
 struct SiteUpdateData {
-    scalarfield magnitude_;
-    vectorfield direction_;
+  scalarfield magnitude_;
+  vectorfield direction_;
 };
 
 struct SiteInputData : public SiteUpdateData {
-    intfield indices_;
+  intfield indices_;
 };
 
 struct PairUpdateData {
-    scalarfield magnitude_;
+  scalarfield magnitude_;
 };
 
 struct PairInputData : public PairUpdateData {
-    pairfield pairs_;
+  pairfield pairs_;
 };
 
 struct TripletUpdateData {
-    scalarfield magnitude_;
+  scalarfield magnitude_;
 };
 
 struct TripletInputData : public TripletUpdateData {
-    tripletfield triplets_;
+  tripletfield triplets_;
 };
 
 struct QuadrupletUpdateData {
-    scalarfield magnitude_;
+  scalarfield magnitude_;
 };
 
 struct QuadrupletInputData : public QuadrupletUpdateData {
-    quadrupletfield quadruplets_;
+  quadrupletfield quadruplets_;
 };
 
-inline scalar dot(const Vector3 &a, const Vector3 &b) {
-  return a.dot(b);
-}
+inline scalar dot(const Vector3 &a, const Vector3 &b) { return a.dot(b); }
 
-inline Vector3 normalized(const Vector3 &a) {
-  return a.normalized();
-}
+inline Vector3 normalized(const Vector3 &a) { return a.normalized(); }
 
-inline Vector3 cross(const Vector3 &a, const Vector3 &b) {
-  return a.cross(b);
-}
+inline Vector3 cross(const Vector3 &a, const Vector3 &b) { return a.cross(b); }
 
-inline int idx_from_translations(const tri_int &n_cells, const int n_cell_atoms,
-                                 const std::array<int, 3> &translations) {
-  const auto &Na = n_cells[0];
-  const auto &Nb = n_cells[1];
-  const auto &N = n_cell_atoms;
-
-  const auto &da = translations[0];
-  const auto &db = translations[1];
-  const auto &dc = translations[2];
-
-  return da * N + db * N * Na + dc * N * Na * Nb;
-}
-
-inline int idx_from_pair(const int ispin, const tri_int &n_cells, int N,
-                         const Pair &pair, bool invert = false) {
+#ifdef SPIRIT_USE_CUDA
+__device__ __inline__ int idx_from_pair(const int ispin, const std::size_t n_cells[3],
+                                    int N, const Pair &pair,
+                                    bool invert = false)
+#else
+inline int idx_from_pair(const int ispin, const sizefield &n_cells, int N,
+                         const Pair &pair, bool invert = false)
+#endif
+{
   // Invalid index if atom type of spin i is not correct
   if (pair.i != ispin % N)
     return -1;
