@@ -29,7 +29,7 @@ run : $(ALL)
 	-for f in $(ALL); do (set -x; "./$$f"); done
 
 clean :
-	-rm -f $(OUT_FILES) gmon.out
+	-rm -f $(ALL) gmon.out
 
 time : $(ALL)
 	-for f in $(ALL); do echo "==========" && env TIMEFMT=$$'job\t%J\nreal\t%E\nuser\t%U\nsys\t%S\nmem(peak)\t%M' zsh -c "time ./$$f > /dev/null"; done && echo "=========="
