@@ -14,7 +14,7 @@ HPP_FILES=$(patsubst %,$(INCLUDE_DIR)/%,natives.hpp benchmark.hpp Managed_Alloca
 SRC_FILES=$(wildcard $(SRC_DIR)/*.cpp)
 OUT_FILES=$(patsubst $(SRC_DIR)/%.cpp,%.out,$(SRC_FILES))
 
-ALL=$(OUT_FILES) polymorphic_cuda.out
+ALL=$(OUT_FILES) polymorphic_cuda.out write_locality_tbb.out compact_write_locality_tbb.out
 
 
 .PHONY : show all run time clean
@@ -34,17 +34,17 @@ clean :
 time : $(ALL)
 	-for f in $(ALL); do echo "==========" && env TIMEFMT=$$'job\t%J\nreal\t%E\nuser\t%U\nsys\t%S\nmem(peak)\t%M' zsh -c "time ./$$f > /dev/null"; done && echo "=========="
 
-write_locality.out : $(SRC_DIR)/write_locality.cpp $(INCLUDE_DIR)/write_locality.hpp $(HPP_FILES)
+write_locality_tbb.out : $(SRC_DIR)/write_locality.cpp $(INCLUDE_DIR)/write_locality.hpp $(HPP_FILES)
 	$(CXX) $(CXXFLAGS) -ltbb $(INCLUDES) -o $@ $<
 
-compact_write_locality.out : $(SRC_DIR)/compact_write_locality.cpp $(INCLUDE_DIR)/compact_write_locality.hpp $(HPP_FILES)
+compact_write_locality_tbb.out : $(SRC_DIR)/compact_write_locality.cpp $(INCLUDE_DIR)/compact_write_locality.hpp $(HPP_FILES)
 	$(CXX) $(CXXFLAGS) -ltbb $(INCLUDES) -o $@ $<
 
 %_cuda.out : $(SRC_DIR)/%.cpp $(INCLUDE_DIR)/%.hpp $(HPP_FILES)
 	$(CUDA) $(CUDAFLAGS) -DSPIRIT_USE_CUDA -x cu $(INCLUDES) -o $@ $<
 
 %.out : $(SRC_DIR)/%.cpp $(INCLUDE_DIR)/%.hpp $(HPP_FILES)
-	$(CXX) $(CXXFLAGS) -fopenmp-simd $(INCLUDES) -o $@ $<
+	$(CXX) $(CXXFLAGS) -DSPIRIT_USE_OPENMP -fopenmp-simd $(INCLUDES) -o $@ $<
 
 $(DATA_DIR)/%.log : %.out
 	-./$< | grep "^|" > $@

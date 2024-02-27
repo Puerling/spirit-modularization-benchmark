@@ -2,9 +2,40 @@
 #include "natives.hpp"
 #include <algorithm>
 #include <cstdlib>
-#include <execution>
 #include <memory>
 #include <optional>
+
+#ifdef SPIRIT_USE_OPENMP
+
+template <class InputIt, class OutputIt, class UnaryOperation>
+void transform(InputIt first, InputIt last, OutputIt d_first,
+               UnaryOperation unary_op) {
+#pragma omp parallel for
+  for (auto i = 0; i < std::distance(first, last); ++i)
+    *(d_first + i) = unary_op(*(first + i));
+}
+
+template <class InputIt, class UnaryOperation>
+void for_each(InputIt first, InputIt last, UnaryOperation unary_op) {
+#pragma omp parallel for
+  for (auto i = 0; i < std::distance(first, last); ++i)
+    unary_op(*(first + i));
+}
+
+#else
+#include <execution>
+
+template <class InputIt, class OutputIt, class UnaryOperation>
+void transform(InputIt first, InputIt last, OutputIt d_first,
+               UnaryOperation unary_op) {
+  std::transform(std::execution::par, first, last, d_first, unary_op);
+}
+
+template <class InputIt, class UnaryOperation>
+void for_each(InputIt first, InputIt last, UnaryOperation unary_op) {
+  std::for_each(std::execution::par, first, last, unary_op);
+}
+#endif
 
 namespace WriteLocality {
 
@@ -149,8 +180,8 @@ public:
   };
 
   void Energy(const vectorfield &spins, scalarfield &energy) {
-    auto transform = [&spins,
-                      &interactions = interactions_](const data_tuple_t &item) {
+    auto transform_op = [&spins, &interactions =
+                                     interactions_](const data_tuple_t &item) {
       return std::apply(
           [&spins, &item](const auto &...interaction) {
             return (
@@ -161,8 +192,7 @@ public:
           interactions);
     };
 
-    std::transform(std::execution::par, cbegin(data_), cend(data_),
-                   begin(energy), transform);
+    ::transform(cbegin(data_), cend(data_), begin(energy), transform_op);
   }
 
   void setGeometry(const std::shared_ptr<Geometry> g) {
@@ -177,11 +207,9 @@ public:
       data_ = field<data_tuple_t>(
           geometry->nos, std::make_tuple(typename Interactions::data_t{}...));
     } else {
-      std::for_each(
-          std::execution::par, begin(data_), end(data_),
-          [&int_ = interactions_](auto &e) {
-            std::apply([&e](const auto &...i) { (i.clearData(e), ...); }, int_);
-          });
+      ::for_each(begin(data_), end(data_), [&int_ = interactions_](auto &e) {
+        std::apply([&e](const auto &...i) { (i.clearData(e), ...); }, int_);
+      });
     }
     std::apply(
         [this](auto &...e) { (e.applyParameters(*geometry, data_), ...); },
@@ -199,8 +227,8 @@ public:
       return interaction;
     }();
 
-    std::for_each(std::execution::par, begin(data_), end(data_),
-                  [&interaction](auto &e) { interaction.clearData(e); });
+    ::for_each(begin(data_), end(data_),
+               [&interaction](auto &e) { interaction.clearData(e); });
 
     std::get<Interaction>(interactions_).applyParameters(*geometry, data_);
   }
@@ -216,8 +244,8 @@ public:
       return interaction;
     }();
 
-    std::for_each(std::execution::par, begin(data_), end(data_),
-                  [&interaction](auto &e) { interaction.clearData(e); });
+    ::for_each(begin(data_), end(data_),
+               [&interaction](auto &e) { interaction.clearData(e); });
 
     std::get<Interaction>(interactions_).applyParameters(*geometry, data_);
   }

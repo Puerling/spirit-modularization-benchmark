@@ -2,7 +2,6 @@
 
 #include "write_locality.hpp"
 #include "benchmark.hpp"
-#include <execution>
 
 namespace WriteLocality {
 
